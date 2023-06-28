@@ -13,9 +13,6 @@
 static tai_hook_ref_t sceAppMgrIsNonGameProgram_hook_ref;
 static SceUID sceAppMgrIsNonGameProgram_hook_id = -1;
 
-static tai_hook_ref_t sceSysmoduleLoadModule_hook_ref;
-static SceUID sceSysmoduleLoadModule_hook_id = -1;
-
 void do_http_servername_patch(int pid, int modid, int module_nid) {
     const char* patch;
     ptrdiff_t offset;
@@ -38,11 +35,9 @@ int replaceDomain(const char* input_user, char* out_user, int input_length, cons
     char input[0xff];
     char out[0xff];
     ksceKernelMemcpyFromUser(input, input_user, input_length+1);
-    ksceKernelPrintf("replaceDomain: %s\n", input);
 
     const char* found = strstr(input, part_to_replace);
     if (found != NULL) {
-        ksceKernelPrintf("found playstation.net\n");
         size_t part_len = strlen(part_to_replace);
         size_t replace_len = strlen(replacement_domain);
         size_t tail_len = strlen(found + part_len);
@@ -58,7 +53,7 @@ int replaceDomain(const char* input_user, char* out_user, int input_length, cons
         strncpy(out + (found - input), replacement_domain, replace_len);
         strncpy(out + (found - input) + replace_len, found + part_len, tail_len + 1);
         out[modified_len] = '\0';
-        ksceKernelPrintf("modified: %s\n", out);
+        ksceKernelPrintf("modified domain: %s\n", out);
         ksceKernelMemcpyToUser(out_user, out, modified_len+1);
         return modified_len+1;
     }
@@ -75,33 +70,39 @@ int sceAppMgrIsNonGameProgram_hook(char* out, char* serverName, int flag, int se
 }
 
 
-SceUID sceSysmoduleLoadModule_hook(SceSysmoduleModuleId id) {
-    SceUID ret = TAI_CONTINUE(SceUID, sceSysmoduleLoadModule_hook_ref, id);
-    if(id == SCE_SYSMODULE_HTTP) {
-        SceUID pid = ksceKernelGetProcessId();
+
+static int hk = 0;
+static tai_hook_ref_t lfp_hook;
+// load module for pid (0 to get), running in kernel context, path is in kernel
+static SceUID load_for_pid_patched(int pid, const char *path, uint32_t flags, int *ptr_to_four) {
+    char* is_libhttp = strstr(path, "libhttp.suprx");
+
+    int res = TAI_CONTINUE(SceUID, lfp_hook, pid, path, flags, ptr_to_four);
+
+    if(is_libhttp != NULL) {
         tai_module_info_t info;
         info.size = sizeof(tai_module_info_t);
         int ret2 = get_tai_info(pid, "SceLibHttp", &info);
         if(ret2 < 0) {
             ksceKernelPrintf("get_tai_info: %08x\n", ret2);
-            return ret;
+            return res;
         }
 
         ksceKernelPrintf("%s %08x %08x\n", info.name, info.module_nid, info.modid);
-
         do_http_servername_patch(pid, info.modid, info.module_nid);
     }
-    return ret;
+
+	return res;
 }
 
 
 void _start() __attribute__ ((weak, alias ("module_start")));
 int module_start(SceSize argc, const void *args) {
-    sceSysmoduleLoadModule_hook_id = taiHookFunctionExportForKernel(KERNEL_PID,
-        &sceSysmoduleLoadModule_hook_ref,
-        "SceSysmodule", 0x03FCF19D, 0x79A0160A,
-        sceSysmoduleLoadModule_hook
-    );
+    int modid = ksceKernelSearchModuleByName("SceKernelModulemgr");
+    if (modid > 0)
+        hk = taiHookFunctionOffsetForKernel(KERNEL_PID, &lfp_hook, modid, 0, 0x21ec, 1, load_for_pid_patched);
+    if (modid < 0 || hk < 0)
+        return SCE_KERNEL_START_FAILED;
 
     sceAppMgrIsNonGameProgram_hook_id = taiHookFunctionExportForKernel(KERNEL_PID,
         &sceAppMgrIsNonGameProgram_hook_ref,
@@ -113,8 +114,8 @@ int module_start(SceSize argc, const void *args) {
 
 
 int module_stop(SceSize args, void *argp) {
-    if(sceSysmoduleLoadModule_hook_id > 0) {
-        taiHookReleaseForKernel(sceSysmoduleLoadModule_hook_id, sceSysmoduleLoadModule_hook_ref);
+    if(hk > 0) {
+		taiHookReleaseForKernel(hk, lfp_hook);
     }
     if(sceAppMgrIsNonGameProgram_hook_id > 0) {
         taiHookReleaseForKernel(sceAppMgrIsNonGameProgram_hook_id, sceAppMgrIsNonGameProgram_hook_ref);
