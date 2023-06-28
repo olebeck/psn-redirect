@@ -1,0 +1,6 @@
+*.elf
+*.velf
+*.skprx
+*.o
+psvita-elfs
+lhttp.suprx
