@@ -118,6 +118,13 @@ def find_patch_location(seg: bytes):
 
     return patch_start, patch_end, call_alloc, call_dealloc
 
+def find_shell_ca_check_location(seg: bytes):
+    off = seg.find(b'\x01\xeb\x82\x00\x50\xf8\x04\x0c')-22
+    dis = list(cs.disasm(seg[off:off+6], off, 2))
+    assert dis[0].mnemonic == "push.w"
+    assert dis[1].mnemonic == "sub"
+    return off
+
 
 class Struct:
     def __init__(self, data: bytes):
@@ -222,6 +229,17 @@ def find_patch(elf: ELFFile):
         "call_dealloc": call_dealloc
     })
 
+# finds where the ssl callback in shell is
+def find_shell_ca_check(elf: ELFFile):
+    entry: int = elf.header.e_entry
+    segment_num = (entry >> 30) & 0x3
+    info_offset = entry & 0x3fffffff
+    seg = elf.get_segment(segment_num)
+    seg_data: bytes = seg.data()
+    
+    module_info = SceModuleInfo(seg_data[info_offset:])
+    loc = find_shell_ca_check_location(seg_data)
+    return loc, module_info.module_nid
 
 # versions to look at
 versions = [
@@ -239,7 +257,12 @@ versions = [
     "374-CEX",   
 ]
 
+def git_contents(repo, commit, name):
+    return BytesIO(repo.git.show('{}:{}'.format(commit.hexsha, name)).encode("utf8", "surrogateescape"))
+
 def add_all_patches():
+    shell_ca_offsets = {}
+
     # find patches in every version
     auto_patches: list[Patch] = []
     def add_patch(r: BinaryIO, version: str):
@@ -247,23 +270,30 @@ def add_all_patches():
         patch = find_patch(elf)
         patch.versions.append(version)
         auto_patches.append(patch)
+    
+    def shell_offset(r: BinaryIO, version: str):
+        elf = ELFFile(r)
+        loc, module_nid = find_shell_ca_check(elf)
+        e = shell_ca_offsets.get(module_nid, (loc, []))
+        e[1].append(version)
+        shell_ca_offsets[module_nid] = e
 
     psvita_elfs = Repo("psvita-elfs")
     for version in versions:
         head = psvita_elfs.heads[version]
         commit: Commit = head.commit
-        file_contents = psvita_elfs.git.show('{}:{}'.format(commit.hexsha, "vs0/sys/external/libhttp.suprx.elf")).encode("utf8", "surrogateescape")
-        add_patch(BytesIO(file_contents), version)
+        add_patch(git_contents(psvita_elfs, commit, "vs0/sys/external/libhttp.suprx.elf"), version)
+        shell_offset(git_contents(psvita_elfs, commit, "vs0/vsh/shell/shell.self.elf"), version)
     psvita_elfs.close()
 
     libhttp_itls = "lhttp.suprx.elf"
     if os.path.exists(libhttp_itls):
         with open(libhttp_itls, "rb") as f:
             add_patch(f, "itls")
-    return auto_patches
+    return auto_patches, shell_ca_offsets
 
 
-def filter_patches(auto_patches: list[Patch]):
+def filter_patches(auto_patches: list[Patch], shell_locations: dict[int, tuple[int, list[str]]]):
     # patches by module_nid
     patches: dict[int, Patch] = {}
     for patch in auto_patches:
@@ -286,11 +316,23 @@ def filter_patches(auto_patches: list[Patch]):
         matches = [a for a in auto_patches if hash(patch) == hash(a)]
         patch.module_nid = set([match.module_nid for match in matches])
 
-    return patches_unique, patches
+
+    shell_locations_unique = []
+    for module_nid, (location, versions) in shell_locations.items():
+        exists = len([p for p in shell_locations_unique if p[0] == location]) > 0
+        if not exists:
+            shell_locations_unique.append((location, set()))
+    
+    # put all module_nids that this patch works for in the patch
+    for (location, module_nids) in shell_locations_unique:
+        matches = [k for k, v in shell_locations.items() if v[0] == location]
+        module_nids.update(set(matches))
+
+    return patches_unique, patches, shell_locations_unique
 
 
 # write header with the patch data and switch to select it
-def write_inject_h(patches_unique: list[Patch], patches: dict[int, Patch]):
+def write_inject_h(patches_unique: list[Patch], patches: dict[int, Patch], shell_locations_unique: list[tuple[int, int]], shell_locations: dict[int, tuple[int, list[str]]]):
     with open("inject-http.h", "w") as f:
         for patch in patches_unique:
             f.write(f"const char {patch.patch_name()}[] = {patch.make()};\n\n")
@@ -313,11 +355,24 @@ def write_inject_h(patches_unique: list[Patch], patches: dict[int, Patch]):
         f.write("\t}\n\treturn 0;\n")
         f.write("}\n")
 
+        f.write("\nint get_shell_location(unsigned int module_nid) {\n")
+        f.write("\tswitch(module_nid) {\n")
+    
+        for location, module_nids in shell_locations_unique:
+            for module_nid in module_nids:
+                s = shell_locations[module_nid]
+                f.write(f"\tcase 0x{module_nid:08x}: // {', '.join(s[1])}\n")
+            f.write(f"\t\treturn 0x{location:08x};\n")
+
+        f.write("\tdefault:\n\t\treturn -1;\n")
+        f.write("\t}\n")
+        f.write("}\n")
+
 
 def main():
-    auto_patches = add_all_patches()
-    patches_unique, patches = filter_patches(auto_patches)
-    write_inject_h(patches_unique, patches)
+    auto_patches, shell_ca_offsets = add_all_patches()
+    patches_unique, patches, unique_offsets = filter_patches(auto_patches, shell_ca_offsets)
+    write_inject_h(patches_unique, patches, unique_offsets, shell_ca_offsets)
 
 
 main()

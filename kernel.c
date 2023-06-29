@@ -69,7 +69,15 @@ int sceAppMgrIsNonGameProgram_hook(char* out, char* serverName, int flag, int se
     return TAI_CONTINUE(int, sceAppMgrIsNonGameProgram_hook_ref);
 }
 
-
+void print_hex(char* buf, char* out, int size) {
+    for (int z = 0; z < size; z++) {
+        unsigned char hi = (buf[z] >> 4) & 0xf; 
+        unsigned char lo = buf[z] & 0xf;        
+        *out++ = hi + (hi < 10 ? '0' : 'a' - 10);
+        *out++ = lo + (lo < 10 ? '0' : 'a' - 10);
+    }
+    *out++ = 0;
+}
 
 static int hk = 0;
 static tai_hook_ref_t lfp_hook;
@@ -80,6 +88,30 @@ static SceUID load_for_pid_patched(int pid, const char *path, uint32_t flags, in
     int res = TAI_CONTINUE(SceUID, lfp_hook, pid, path, flags, ptr_to_four);
 
     if(is_libhttp != NULL) {
+        if(pid == ksceKernelSysrootGetShellPid()) {
+            unsigned char opcodes[] = {
+                0x01, 0x20, // movs r0, #1
+                0x70, 0x47, // bx lr
+            };
+
+            int modid = ksceKernelGetModuleIdByPid(pid);
+            tai_module_info_t info;
+            info.size = sizeof(tai_module_info_t);
+            int ret2 = get_tai_info(pid, "SceShell", &info);
+            if(ret2 < 0) {
+                ksceKernelPrintf("get_tai_info SceShell: %08x\n", ret2);
+                return res;
+            }
+
+            int off = get_shell_location(info.module_nid);
+            if(off < 0) {
+                ksceKernelPrintf("unknown SceShell\n");
+                return res;
+            }
+
+            taiInjectDataForKernel(pid, modid, 0, off, opcodes, sizeof(opcodes));
+        }
+
         tai_module_info_t info;
         info.size = sizeof(tai_module_info_t);
         int ret2 = get_tai_info(pid, "SceLibHttp", &info);
@@ -94,6 +126,8 @@ static SceUID load_for_pid_patched(int pid, const char *path, uint32_t flags, in
 
 	return res;
 }
+
+
 
 
 void _start() __attribute__ ((weak, alias ("module_start")));

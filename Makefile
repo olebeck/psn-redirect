@@ -15,8 +15,9 @@ OBJS_KERNEL_363 := kernel.o tai-363.o
 LIBS_KERNEL += \
 	-ltaihenForKernel_stub -lSceDebugForDriver_stub \
 	-lSceIofilemgrForDriver_stub -lSceThreadmgrForDriver_stub \
-	-lSceSysmemForDriver_stub  -lSceSysclibForDriver_stub \
-	-lSceModulemgrForDriver_stub
+	-lSceSysmemForDriver_stub -lSceSysclibForDriver_stub \
+	-lSceModulemgrForDriver_stub -lSceSysrootForDriver_stub \
+	-lSceModulemgrForKernel_stub 
 
 
 all: package
@@ -32,7 +33,7 @@ package: $(PROJECT).skprx $(PROJECT)-363.skprx
 	vita-elf-create $< $@
 
 $(PROJECT).elf: $(OBJS_KERNEL)
-	$(CC) $(CFLAGS) $^ $(LIBS_KERNEL) -lSceModulemgrForKernel_stub -o $@
+	$(CC) $(CFLAGS) $^ $(LIBS_KERNEL) -o $@
 
 $(PROJECT)-363.elf: $(OBJS_KERNEL_363)
 	$(CC) $(CFLAGS) $^ $(LIBS_KERNEL) -lSceModulemgrForKernel_363_stub -o $@

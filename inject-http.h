@@ -54,3 +54,52 @@ int get_servername_patch(const char** patch, int* offset, int* patch_size, unsig
 	}
 	return 0;
 }
+
+int get_shell_location(unsigned int module_nid) {
+	switch(module_nid) {
+	case 0x0552f692: // 360-CEX
+	case 0x532155e5: // 361-CEX
+		return 0x00325974;
+	case 0xeab89d5c: // 360-DEX
+	case 0x7a5f8457: // 361-DEX
+		return 0x0031c3bc;
+	case 0xb96bcfc3: // 360-QAF
+		return 0x00325bd4;
+	case 0x232d733b: // 361-TOOL
+	case 0x6cb01295: // 360-TOOL
+		return 0x00317ac8;
+	case 0xbb4b0a3e: // 363-CEX
+		return 0x00325a10;
+	case 0xe7c5011a: // 363-DEX
+		return 0x0031c458;
+	case 0xe541db9b: // 363-QAF, 363-TOOL
+		return 0x00317b64;
+	case 0x12dac0f3: // 368-CEX
+	case 0x34b4d82e: // 367-CEX
+	case 0x5549bf1f: // 365-CEX
+		return 0x00325db8;
+	case 0x3c652b1a: // 367-DEX
+	case 0x587f9ced: // 365-DEX
+	case 0x4df04256: // 368-DEX
+		return 0x0031c800;
+	case 0xab5c2a00: // 367-TOOL
+	case 0x4fe7c671: // 368-TOOL
+	case 0xe6a02f2b: // 365-TOOL
+		return 0x00317f34;
+	case 0x2053b5a5: // 370-CEX
+	case 0xf476e785: // 371-CEX
+	case 0x51cb6207: // 374-CEX
+	case 0x0703c828: // 369-CEX
+	case 0x939ffbe9: // 372-CEX
+	case 0x734d476a: // 373-CEX
+		return 0x00325dc8;
+	case 0x4670a0c8: // 373-TOOL
+	case 0xc5b7c871: // 371-TOOL
+	case 0xb45216f4: // 372-QAF
+		return 0x00317f44;
+	case 0xa6509361: // 372-DEX
+		return 0x0031c810;
+	default:
+		return -1;
+	}
+}
