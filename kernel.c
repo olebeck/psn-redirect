@@ -17,7 +17,24 @@ void do_http_servername_patch(int pid, int modid, int module_nid) {
     const char* patch;
     ptrdiff_t offset;
     int patch_size;
-    int err = get_servername_patch(&patch, &offset, &patch_size, module_nid);
+    int err = get_PsnRedirectPatch(&patch, &offset, &patch_size, module_nid);
+    if(err < 0) {
+        ksceKernelPrintf("Failed to find patch for %08x\n", module_nid);
+        return;
+    }
+
+    int hnd = taiInjectDataForKernel(pid, modid, 0, offset, patch, patch_size);
+    if(hnd < 0) {
+        ksceKernelPrintf("http_servername_patch: %08x\n", hnd);
+        return;
+    }
+}
+
+void do_shell_ca_check_patch(int pid, int modid, int module_nid) {
+    const char* patch;
+    ptrdiff_t offset;
+    int patch_size;
+    int err = get_ShellCACheckPatch(&patch, &offset, &patch_size, module_nid);
     if(err < 0) {
         ksceKernelPrintf("Failed to find patch for %08x\n", module_nid);
         return;
@@ -89,11 +106,6 @@ static SceUID load_for_pid_patched(int pid, const char *path, uint32_t flags, in
 
     if(is_libhttp != NULL) {
         if(pid == ksceKernelSysrootGetShellPid()) {
-            unsigned char opcodes[] = {
-                0x01, 0x20, // movs r0, #1
-                0x70, 0x47, // bx lr
-            };
-
             int modid = ksceKernelGetModuleIdByPid(pid);
             tai_module_info_t info;
             info.size = sizeof(tai_module_info_t);
@@ -103,13 +115,7 @@ static SceUID load_for_pid_patched(int pid, const char *path, uint32_t flags, in
                 return res;
             }
 
-            int off = get_shell_location(info.module_nid);
-            if(off < 0) {
-                ksceKernelPrintf("unknown SceShell\n");
-                return res;
-            }
-
-            taiInjectDataForKernel(pid, modid, 0, off, opcodes, sizeof(opcodes));
+            do_shell_ca_check_patch(pid, info.modid, info.module_nid);
         }
 
         tai_module_info_t info;
@@ -120,7 +126,6 @@ static SceUID load_for_pid_patched(int pid, const char *path, uint32_t flags, in
             return res;
         }
 
-        ksceKernelPrintf("%s %08x %08x\n", info.name, info.module_nid, info.modid);
         do_http_servername_patch(pid, info.modid, info.module_nid);
     }
 
@@ -143,7 +148,9 @@ int module_start(SceSize argc, const void *args) {
         "SceAppMgr", TAI_ANY_LIBRARY, 0x5F22E192,
         sceAppMgrIsNonGameProgram_hook
     );
-    ksceKernelPrintf("sceAppMgrIsNonGameProgram_hook_id: %08x\n", sceAppMgrIsNonGameProgram_hook_id);
+    if(sceAppMgrIsNonGameProgram_hook_id < 0) {
+        ksceKernelPrintf("sceAppMgrIsNonGameProgram_hook_id: %08x\n", sceAppMgrIsNonGameProgram_hook_id);
+    }
 }
 
 
