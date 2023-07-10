@@ -48,7 +48,7 @@ void do_shell_ca_check_patch(int pid, int modid, int module_nid) {
 }
 
 
-int replaceDomain(const char* input_user, char* out_user, int input_length, const char* replacement_domain, const char* part_to_replace) {
+int replaceDomain(const char* input_user, char* out_user, int input_length, const char* part_to_replace, const char* replacement_domain) {
     char input[0xff];
     char out[0xff];
     ksceKernelMemcpyFromUser(input, input_user, input_length+1);
@@ -80,7 +80,7 @@ int replaceDomain(const char* input_user, char* out_user, int input_length, cons
 
 int sceAppMgrIsNonGameProgram_hook(char* out, char* serverName, int flag, int serverNameLength) {
     if(flag == 0x00001234) {
-        return replaceDomain(serverName, out, serverNameLength, "np.yuv.pink", "playstation.net");
+        return replaceDomain(serverName, out, serverNameLength, "playstation.net", "np.yuv.pink");
     }
 
     return TAI_CONTINUE(int, sceAppMgrIsNonGameProgram_hook_ref);

@@ -88,9 +88,9 @@ class PsnRedirectPatch(Patch):
         call_dealloc = insn_b_to_addr(dis3[0])
 
         return patch_start, {
-            "patch_end": patch_end,
-            "call_alloc": call_alloc,
-            "call_dealloc": call_dealloc
+            "patch_end": BASE+patch_end,
+            "call_alloc": BASE+call_alloc,
+            "call_dealloc": BASE+call_dealloc
         }
 
 
@@ -116,6 +116,6 @@ class ShellCACheckPatch(Patch):
 
 def main():
     with open("inject-http.h", "w") as f:
-        f.write(generate_all_patches([PsnRedirectPatch, ShellCACheckPatch]))
+        f.write(generate_all_patches(PsnRedirectPatch, ShellCACheckPatch))
 
 main()
