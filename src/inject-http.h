@@ -150,3 +150,120 @@ int get_ShellCACheckPatch(const char** patch, int* offset, int* patch_size, unsi
 	}
 	return 0;
 }
+
+
+// ShellXMPPRedirect
+const char shell_xmpp_redirect_patch_0x81310bf6_0x81458000[] = {0x47, 0xf1, 0x04, 0xea};
+
+const char shell_xmpp_redirect_patch_0x8130763e_0x8144e1c8[] = {0x46, 0xf1, 0xc4, 0xed};
+
+const char shell_xmpp_redirect_patch_0x81310e56_0x81458250[] = {0x47, 0xf1, 0xfc, 0xe9};
+
+const char shell_xmpp_redirect_patch_0x81302d4a_0x81449788[] = {0x46, 0xf1, 0x1e, 0xed};
+
+const char shell_xmpp_redirect_patch_0x81310c92_0x814580a0[] = {0x47, 0xf1, 0x06, 0xea};
+
+const char shell_xmpp_redirect_patch_0x813076da_0x8144e260[] = {0x46, 0xf1, 0xc2, 0xed};
+
+const char shell_xmpp_redirect_patch_0x81302de6_0x81449828[] = {0x46, 0xf1, 0x20, 0xed};
+
+const char shell_xmpp_redirect_patch_0x8131103a_0x81458448[] = {0x47, 0xf1, 0x06, 0xea};
+
+const char shell_xmpp_redirect_patch_0x81307a82_0x8144e608[] = {0x46, 0xf1, 0xc2, 0xed};
+
+const char shell_xmpp_redirect_patch_0x813031b6_0x81449bf8[] = {0x46, 0xf1, 0x20, 0xed};
+
+const char shell_xmpp_redirect_patch_0x8131103a_0x81458468[] = {0x47, 0xf1, 0x16, 0xea};
+
+const char shell_xmpp_redirect_patch_0x813031b6_0x81449c20[] = {0x46, 0xf1, 0x34, 0xed};
+
+const char shell_xmpp_redirect_patch_0x81307a82_0x8144e630[] = {0x46, 0xf1, 0xd6, 0xed};
+
+int get_ShellXMPPRedirect(const char** patch, int* offset, int* patch_size, unsigned int module_nid) {
+	switch(module_nid) {
+	case 0x0552f692: // 360-CEX
+	case 0x532155e5: // 361-CEX
+		*patch = shell_xmpp_redirect_patch_0x81310bf6_0x81458000;
+		*patch_size = sizeof(shell_xmpp_redirect_patch_0x81310bf6_0x81458000);
+		*offset = 0x310bf6;
+		break;
+	case 0xeab89d5c: // 360-DEX
+	case 0x7a5f8457: // 361-DEX
+		*patch = shell_xmpp_redirect_patch_0x8130763e_0x8144e1c8;
+		*patch_size = sizeof(shell_xmpp_redirect_patch_0x8130763e_0x8144e1c8);
+		*offset = 0x30763e;
+		break;
+	case 0xb96bcfc3: // 360-QAF
+		*patch = shell_xmpp_redirect_patch_0x81310e56_0x81458250;
+		*patch_size = sizeof(shell_xmpp_redirect_patch_0x81310e56_0x81458250);
+		*offset = 0x310e56;
+		break;
+	case 0x232d733b: // 361-TOOL
+	case 0x6cb01295: // 360-TOOL
+		*patch = shell_xmpp_redirect_patch_0x81302d4a_0x81449788;
+		*patch_size = sizeof(shell_xmpp_redirect_patch_0x81302d4a_0x81449788);
+		*offset = 0x302d4a;
+		break;
+	case 0xbb4b0a3e: // 363-CEX
+		*patch = shell_xmpp_redirect_patch_0x81310c92_0x814580a0;
+		*patch_size = sizeof(shell_xmpp_redirect_patch_0x81310c92_0x814580a0);
+		*offset = 0x310c92;
+		break;
+	case 0xe7c5011a: // 363-DEX
+		*patch = shell_xmpp_redirect_patch_0x813076da_0x8144e260;
+		*patch_size = sizeof(shell_xmpp_redirect_patch_0x813076da_0x8144e260);
+		*offset = 0x3076da;
+		break;
+	case 0xe541db9b: // 363-QAF, 363-TOOL
+		*patch = shell_xmpp_redirect_patch_0x81302de6_0x81449828;
+		*patch_size = sizeof(shell_xmpp_redirect_patch_0x81302de6_0x81449828);
+		*offset = 0x302de6;
+		break;
+	case 0x12dac0f3: // 368-CEX
+	case 0x34b4d82e: // 367-CEX
+	case 0x5549bf1f: // 365-CEX
+		*patch = shell_xmpp_redirect_patch_0x8131103a_0x81458448;
+		*patch_size = sizeof(shell_xmpp_redirect_patch_0x8131103a_0x81458448);
+		*offset = 0x31103a;
+		break;
+	case 0x3c652b1a: // 367-DEX
+	case 0x587f9ced: // 365-DEX
+	case 0x4df04256: // 368-DEX
+		*patch = shell_xmpp_redirect_patch_0x81307a82_0x8144e608;
+		*patch_size = sizeof(shell_xmpp_redirect_patch_0x81307a82_0x8144e608);
+		*offset = 0x307a82;
+		break;
+	case 0xab5c2a00: // 367-TOOL
+	case 0x4fe7c671: // 368-TOOL
+	case 0xe6a02f2b: // 365-TOOL
+		*patch = shell_xmpp_redirect_patch_0x813031b6_0x81449bf8;
+		*patch_size = sizeof(shell_xmpp_redirect_patch_0x813031b6_0x81449bf8);
+		*offset = 0x3031b6;
+		break;
+	case 0x2053b5a5: // 370-CEX
+	case 0xf476e785: // 371-CEX
+	case 0x51cb6207: // 374-CEX
+	case 0x0703c828: // 369-CEX
+	case 0x939ffbe9: // 372-CEX
+	case 0x734d476a: // 373-CEX
+		*patch = shell_xmpp_redirect_patch_0x8131103a_0x81458468;
+		*patch_size = sizeof(shell_xmpp_redirect_patch_0x8131103a_0x81458468);
+		*offset = 0x31103a;
+		break;
+	case 0x4670a0c8: // 373-TOOL
+	case 0xc5b7c871: // 371-TOOL
+	case 0xb45216f4: // 372-QAF
+		*patch = shell_xmpp_redirect_patch_0x813031b6_0x81449c20;
+		*patch_size = sizeof(shell_xmpp_redirect_patch_0x813031b6_0x81449c20);
+		*offset = 0x3031b6;
+		break;
+	case 0xa6509361: // 372-DEX
+		*patch = shell_xmpp_redirect_patch_0x81307a82_0x8144e630;
+		*patch_size = sizeof(shell_xmpp_redirect_patch_0x81307a82_0x8144e630);
+		*offset = 0x307a82;
+		break;
+	default:
+		return -1;
+	}
+	return 0;
+}

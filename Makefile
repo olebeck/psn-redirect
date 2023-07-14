@@ -8,9 +8,8 @@ PROJECT := psn-redirect
 CFLAGS += -Wl,-q -nostdlib
 
 
-SRC_KERNEL := kernel.c tai.c
-OBJS_KERNEL := kernel.o tai.o
-OBJS_KERNEL_363 := kernel.o tai-363.o
+OBJS_KERNEL := main.o http.o xmpp.o tai.o
+OBJS_KERNEL_363 := main.o http.o xmpp.o tai-363.o
 
 LIBS_KERNEL += \
 	-ltaihenForKernel_stub -lSceDebugForDriver_stub \
@@ -39,14 +38,14 @@ $(PROJECT)-363.elf: $(OBJS_KERNEL_363)
 	$(CC) $(CFLAGS) $^ $(LIBS_KERNEL) -lSceModulemgrForKernel_363_stub -o $@
 
 
-%.o: %.c inject-http.h | $(OBJ_KERNEL_DIRS) 
+%.o: src/%.c src/inject-http.h | $(OBJ_KERNEL_DIRS) 
 	$(CC) -c $(CFLAGS) -o $@ $<
 
-%-363.o: %.c | $(OBJ_KERNEL_DIRS)
+%-363.o: src/%.c | $(OBJ_KERNEL_DIRS)
 	$(CC) -c $(CFLAGS) -DVER_363 -o $@ $<
 
 
-inject-http.h: http-injects.py
+src/inject-http.h: http-injects.py
 	python http-injects.py
 
 

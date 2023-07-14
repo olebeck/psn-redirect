@@ -114,8 +114,37 @@ class ShellCACheckPatch(Patch):
         return BASE+off, {}
 
 
+
+class ShellXMPPRedirect(Patch):
+    _filename = "vs0/vsh/shell/shell.self.elf"
+    def patch_name(self):
+        return f"shell_xmpp_redirect_patch_0x{self.addr:08x}_0x{self.syms['sceAppMgrReleaseBgmPort']:08x}"
+    
+    _imports = {
+        "sceAppMgrReleaseBgmPort": 0xF3717E37,
+    }
+
+    _code = (
+        "blx sceAppMgrReleaseBgmPort\n"
+    )
+
+    @staticmethod
+    def find(data: bytes) -> tuple[int, dict[str, int]]:
+        off = data.find(b'\xc4\xf8\x2c\x90\xc4\xf8\x30\x90')
+        if off < 0:
+            raise Exception("not found")
+        off -= 20
+        dis = list(cs.disasm(data[off:off+32], off, 3))
+        assert dis[0].mnemonic == "str.w"
+        assert dis[1].mnemonic == "adds.w"
+        assert dis[2].mnemonic == "str.w"
+        return BASE+off, {}
+
+
+
+
 def main():
-    with open("inject-http.h", "w") as f:
-        f.write(generate_all_patches(PsnRedirectPatch, ShellCACheckPatch))
+    with open("src/inject-http.h", "w") as f:
+        f.write(generate_all_patches(PsnRedirectPatch, ShellCACheckPatch, ShellXMPPRedirect))
 
 main()
