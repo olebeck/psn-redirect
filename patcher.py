@@ -4,14 +4,17 @@ import struct
 from elftools.elf.elffile import ELFFile
 from typing import BinaryIO
 from io import BytesIO
-from git import Repo, Commit
 from collections import defaultdict
+import requests
 
 
 BASE = 0x81000000
+s = requests.Session()
 
-def git_contents(repo, commit, name):
-    return BytesIO(repo.git.show('{}:{}'.format(commit.hexsha, name)).encode("utf8", "surrogateescape"))
+def git_contents(branch, name):
+    r = s.get(f"https://github.com/LiEnby/psvita-elfs/raw/refs/heads/{branch}/{name}")
+    r.raise_for_status()
+    return BytesIO(r.content)
 
 def insn_b_to_addr(insn: CsInsn):
     return int(insn.op_str[3:], 16)
@@ -202,15 +205,13 @@ def generate_all_patches(*classes: Patch) -> str:
     all_patches: dict[str, list[Patch]] = defaultdict(list)
     
     # create patches for each firmware version
-    psvita_elfs = Repo("psvita-elfs")
     for version in versions:
-        commit: Commit = psvita_elfs.heads[version].commit
         for cls in classes:
-            f = git_contents(psvita_elfs, commit, cls._filename)
-            patch = cls.create(f)
+            print(version, cls.__name__)
+            data = git_contents(version, cls._filename)
+            patch = cls.create(data)
             patch.versions.append(version)
             all_patches[cls.__name__].append(patch)
-    psvita_elfs.close()
 
     # create patches for extra elfs
     for cls in classes:

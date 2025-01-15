@@ -54,6 +54,7 @@ void apply_patch(int pid, int modid, int module_nid, PatchGet get_func, const ch
 // load module for pid (0 to get), running in kernel context, path is in kernel
 static SceUID load_for_pid_patched(int pid, const char *path, uint32_t flags, int *ptr_to_four) {
     char* is_libhttp = strstr(path, "libhttp.suprx");
+    char* is_matching2 = strstr(path, "np_matching2.suprx");
 
     int res = TAI_CONTINUE(SceUID, lfp_hook, pid, path, flags, ptr_to_four);
 
@@ -81,6 +82,18 @@ static SceUID load_for_pid_patched(int pid, const char *path, uint32_t flags, in
         }
 
         apply_patch(pid, info.modid, info.module_nid, get_PsnRedirectPatch, "PsnRedirectPatch");
+    }
+
+    if(is_matching2 != NULL) {
+        tai_module_info_t info;
+        info.size = sizeof(tai_module_info_t);
+        int ret2 = get_tai_info(pid, "SceNpMatching2", &info);
+        if(ret2 < 0) {
+            ksceKernelPrintf("get_tai_info: %08x\n", ret2);
+            return res;
+        }
+
+        apply_patch(pid, info.modid, info.module_nid, get_Matching2TlsPortPatch, "NpMatching2TlsPortPatch");
     }
 
 	return res;

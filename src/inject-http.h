@@ -267,3 +267,48 @@ int get_ShellXMPPRedirect(const char** patch, int* offset, int* patch_size, unsi
 	}
 	return 0;
 }
+
+
+// Matching2TlsPortPatch
+const char np_matching2_tls_patch[] = {0x40, 0xf6, 0x97, 0x51};
+
+int get_Matching2TlsPortPatch(const char** patch, int* offset, int* patch_size, unsigned int module_nid) {
+	switch(module_nid) {
+	case 0x85e47c80: // 368-TOOL
+	case 0x34ada081: // 365-TOOL
+	case 0x67435d82: // 371-TOOL
+	case 0x05db4084: // 371-CEX
+	case 0x7ada9407: // 368-DEX
+	case 0x0b279888: // 365-DEX
+	case 0x04224f89: // 361-DEX
+	case 0x2524248b: // 360-TOOL
+	case 0x96822b16: // 363-CEX
+	case 0x9d187521: // 363-QAF, 363-TOOL
+	case 0x4d701ea1: // 368-CEX
+	case 0xfeefd5a3: // 361-TOOL
+	case 0xa66effab: // 367-TOOL
+	case 0x264af8ab: // 373-CEX
+	case 0xa9eb5533: // 374-CEX
+	case 0x73a34dc0: // 372-CEX
+	case 0xe991cb43: // 369-CEX
+	case 0x8003114b: // 363-DEX
+	case 0x6b92da59: // 365-CEX
+	case 0x7c7c6bda: // 370-CEX
+	case 0x9b6e9b68: // 372-QAF
+	case 0x4892f1eb: // 361-CEX
+	case 0xc0a286eb: // 367-DEX
+	case 0x515c27f0: // 367-CEX
+	case 0x729da3f1: // 360-QAF
+	case 0x4bebbdf3: // 360-CEX
+	case 0x72ee4373: // 372-DEX
+	case 0x5e983677: // 373-TOOL
+	case 0x874ddd78: // 360-DEX
+		*patch = np_matching2_tls_patch;
+		*patch_size = sizeof(np_matching2_tls_patch);
+		*offset = 0x20196;
+		break;
+	default:
+		return -1;
+	}
+	return 0;
+}

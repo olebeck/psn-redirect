@@ -141,10 +141,36 @@ class ShellXMPPRedirect(Patch):
         return BASE+off, {}
 
 
+class Matching2TlsPortPatch(Patch):
+    _filename = "vs0/sys/external/np_matching2.suprx.elf"
+    def patch_name(self):
+        return "np_matching2_tls_patch"
+    
+    _code = (
+        "movw r1, #0xd97\n"
+    )
+
+    @staticmethod
+    def find(data: bytes) -> tuple[int, dict[str, int]]:
+        start_needle = bytes(ks.asm("""
+            push {r4,r5,r6,r7,r8,r9,r10,r11,lr}
+            sub sp,#0x14
+            strd r2, r1, [sp]
+        """)[0])
+        end_needle = bytes(ks.asm("""
+            add sp,#0x14
+            pop.w {r4,r5,r6,r7,r8,r9,r10,r11,pc}
+        """)[0])
+
+        start = data.find(start_needle)
+        end = data[start:].find(end_needle) + start
+        precise = bytes(ks.asm("movw r1,#443")[0])
+        off = data[start:end].index(precise)
+        return BASE+off+start, {}
 
 
 def main():
     with open("src/inject-http.h", "w") as f:
-        f.write(generate_all_patches(PsnRedirectPatch, ShellCACheckPatch, ShellXMPPRedirect))
+        f.write(generate_all_patches(PsnRedirectPatch, ShellCACheckPatch, ShellXMPPRedirect, Matching2TlsPortPatch))
 
 main()
