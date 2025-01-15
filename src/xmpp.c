@@ -28,11 +28,11 @@ __attribute__((naked)) void sceAppMgrReleaseBgmPort_hook() {
         "mov r0,r7\n"
         "ldr r1, =replacement_xmpp\n"
         "mov r2, #0x82\n"
-        "b ksceKernelMemcpyToUser\n"
+        "b ksceKernelCopyToUser\n"
     );
 }
 
-void init_xmpp(char* domain, unsigned short port) {
+void init_xmpp(const char* domain, unsigned short port) {
     memset(&replacement_xmpp, 0, sizeof(replacement_xmpp));
     strncpy(replacement_xmpp.domain, domain, sizeof(replacement_xmpp.domain));
     strncpy(replacement_xmpp.server_name, domain, sizeof(replacement_xmpp.server_name));

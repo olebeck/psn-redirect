@@ -17,14 +17,17 @@ static int hk = 0;
 static tai_hook_ref_t lfp_hook;
 
 
-void print_hex(char* buf, char* out, int size) {
+void print_hex(char* buf, int size) {
+    char out[3];
+    out[2] = 0;
     for (int z = 0; z < size; z++) {
         unsigned char hi = (buf[z] >> 4) & 0xf; 
-        unsigned char lo = buf[z] & 0xf;        
-        *out++ = hi + (hi < 10 ? '0' : 'a' - 10);
-        *out++ = lo + (lo < 10 ? '0' : 'a' - 10);
+        unsigned char lo = buf[z] & 0xf;
+        out[0] = hi + (hi < 10 ? '0' : 'a' - 10);
+        out[1] = lo + (lo < 10 ? '0' : 'a' - 10);
+        ksceKernelPrintf(out);
     }
-    *out++ = 0;
+    ksceKernelPrintf("\n");
 }
 
 
@@ -83,6 +86,20 @@ static SceUID load_for_pid_patched(int pid, const char *path, uint32_t flags, in
 	return res;
 }
 
+const replacement_t replacements[] = {
+    {
+        .original_domain = "playstation.net",
+        .replacement_domain = "np.yuv.pink",
+    },
+    {
+        .original_domain = "kzv.online.scee.com",
+        .replacement_domain = "mirage.yuv.pink"
+    }
+};
+
+const char* xmpp_replacement = "xmpp.np.yuv.pink";
+
+#define ARRAY_LEN(x) (sizeof(x)/sizeof(*x))
 
 void _start() __attribute__ ((weak, alias ("module_start")));
 int module_start(SceSize argc, const void *args) {
@@ -94,8 +111,8 @@ int module_start(SceSize argc, const void *args) {
         return SCE_KERNEL_START_FAILED;
     }
 
-    init_http("np.yuv.pink");
-    init_xmpp("xmpp.np.yuv.pink", 5223);
+    init_http(&replacements, ARRAY_LEN(replacements));
+    init_xmpp(xmpp_replacement, 5223);
 }
 
 

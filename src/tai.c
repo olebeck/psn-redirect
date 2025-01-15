@@ -23,12 +23,6 @@
 
 #define MOD_LIST_SIZE (256)
 
-#ifdef VER_363
-#undef ksceKernelGetModuleInternal
-int ksceKernelGetModuleInternal(SceUID modid, void **info);
-#define ksceKernelGetModuleCB ksceKernelGetModuleInternal
-#endif
-
 int sce_to_tai_module_info(SceUID pid, void *sceinfo, tai_module_info_t *taiinfo) {
     char *info;
 

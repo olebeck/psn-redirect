@@ -1,18 +1,16 @@
 #include <psp2kern/kernel/debug.h>
 #include <psp2kern/kernel/sysmem.h>
 #include <taihen.h>
+#include "http.h"
 
 
 static tai_hook_ref_t sceAppMgrIsNonGameProgram_hook_ref;
 static SceUID sceAppMgrIsNonGameProgram_hook_id = -1;
 
-static char* replacement_domain;
+static const replacement_t* s_replacements;
+static int s_replacements_num;
 
-int replaceDomain(const char* input_user, char* out_user, int input_length, const char* part_to_replace, const char* replacement_domain) {
-    char input[0xff];
-    char out[0xff];
-    ksceKernelMemcpyFromUser(input, input_user, input_length+1);
-
+int replaceDomain(const char* input, char* out, int input_length, const char* part_to_replace, const char* replacement_domain) {
     const char* found = strstr(input, part_to_replace);
     if (found != NULL) {
         size_t part_len = strlen(part_to_replace);
@@ -20,7 +18,7 @@ int replaceDomain(const char* input_user, char* out_user, int input_length, cons
         size_t tail_len = strlen(found + part_len);
         size_t modified_len = strlen(input) - part_len + replace_len;
         
-        if (out_user == NULL) {
+        if (out == NULL) {
             // just Return the length if out is 0
             return modified_len+1;
         }
@@ -31,24 +29,43 @@ int replaceDomain(const char* input_user, char* out_user, int input_length, cons
         strncpy(out + (found - input) + replace_len, found + part_len, tail_len + 1);
         out[modified_len] = '\0';
         ksceKernelPrintf("modified domain: %s\n", out);
-        ksceKernelMemcpyToUser(out_user, out, modified_len+1);
         return modified_len+1;
     }
 
     return -1;
 }
 
-int sceAppMgrIsNonGameProgram_hook(char* out, char* serverName, int flag, int serverNameLength) {
+int sceAppMgrIsNonGameProgram_hook(char* out_user, char* serverName_user, int flag, int serverNameLength) {
+    char serverName[0xff];
+    char out[0xff];
+    char* out_p = out;
+    int ret = 0;
+
     if(flag == 0x00001234) {
-        return replaceDomain(serverName, out, serverNameLength, "playstation.net", replacement_domain);
+        ksceKernelMemcpyFromUser(serverName, serverName_user, serverNameLength+1);
+        if(out_user == NULL) {
+            out_p = NULL;
+        }
+
+        for(int i = 0; i < s_replacements_num; i++) {
+            const replacement_t* r = &s_replacements[i];
+            ret = replaceDomain(serverName, out_p, serverNameLength, r->original_domain, r->replacement_domain);
+            if(ret > 0) break;
+        }
+
+        if(ret > 0 && out_p != NULL) {
+            ksceKernelMemcpyToUser(out_user, out_p, ret);
+        }
+        return ret;
     }
 
     return TAI_CONTINUE(int, sceAppMgrIsNonGameProgram_hook_ref);
 }
 
 
-void init_http(char* domain) {
-    replacement_domain = domain;
+void init_http(const replacement_t* replacements, int replacement_num) {
+    s_replacements = replacements;
+    s_replacements_num = replacement_num;
 
     sceAppMgrIsNonGameProgram_hook_id = taiHookFunctionExportForKernel(KERNEL_PID,
         &sceAppMgrIsNonGameProgram_hook_ref,
